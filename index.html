@@ -1,19 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-    </head>
-    <body>
-        <canvas id="canvasOne" width="1024" height="768">
-            Your browser does not support HTML5 Canvas.
-        </canvas>
-        <script 
-        src="https://files.worldwind.arc.nasa.gov/artifactory/web/0.9.0/worldwind.min.js"
-        type="text/javascript"></script>
-        <script src="helloWorldWind.js" type="text/javascript">
-        </script>
-        <h1>Salom Litt Team
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <title>Document</title>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <script>
+        const ISS_TLE = 
+            `1 25544U 98067A   21122.75616700  .00027980  00000-0  51432-3 0  9994
+            2 25544  51.6442 207.4449 0002769 310.1189 193.6568 15.48993527281553`;
+        // Initialize the satellite record with this TLE
+        const satrec = satellite.twoline2satrec(
+        ISS_TLE.split('\n')[0].trim(), 
+        ISS_TLE.split('\n')[1].trim()
+        );
+        // Get the position of the satellite at the given date
+        const date = new Date();
+    
+        // Initialize the Cesium viewer.
+        const viewer = new Cesium.Viewer('cesiumContainer', {imageryProvider: new Cesium.TileMapServiceImageryProvider({    url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),}),
+        baseLayerPicker: false, geocoder: false, homeButton: false, infoBox: false,
+        navigationHelpButton: false, sceneModePicker: false
+        });
+        viewer.scene.globe.enableLighting = true;
+
+        
+        //time
+        const totalSeconds = 60 * 60 * 6;
+        const timestepInSeconds = 10;
+        const start = Cesium.JulianDate.fromDate(new Date());
+        const stop = Cesium.JulianDate.addSeconds(start, totalSeconds, new Cesium.JulianDate());
+        viewer.clock.startTime = start.clone();
+        viewer.clock.stopTime = stop.clone();
+        viewer.clock.currentTime = start.clone();
+        viewer.timeline.zoomTo(start, stop);
+        viewer.clock.multiplier = 40;
+        viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
+        
+        
+        const positionsOverTime = new Cesium.SampledPositionProperty();
+        for (let i = 0; i < totalSeconds; i+= timestepInSeconds) {
+            const time = Cesium.JulianDate.addSeconds(start, i, new Cesium.JulianDate());
+            const jsDate = Cesium.JulianDate.toDate(time);
+
+            // ...Get position from satellite-js...
+            const positionAndVelocity = satellite.propagate(satrec, jsDate);
+            const gmst = satellite.gstime(jsDate);
+            const p   = satellite.eciToGeodetic(positionAndVelocity.position, gmst);
             
-        </h1>
-    </body>
+            const position = Cesium.Cartesian3.fromRadians(p.longitude, p.latitude, p.height * 1000);
+            positionsOverTime.addSample(time, position);
+        }
+
+        // Visualize the satellite with a red dot.
+        const satellitePoint = viewer.entities.add({
+            position: positionsOverTime,
+            point: { pixelSize: 5, color: Cesium.Color.RED }
+        });
+
+        // viewer.trackedEntity = satellitePoint;
+        </script>
+    
+</body>
 </html>
