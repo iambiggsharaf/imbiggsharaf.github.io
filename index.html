@@ -25,8 +25,8 @@
     
         // Initialize the Cesium viewer.
         const viewer = new Cesium.Viewer('cesiumContainer', {imageryProvider: new Cesium.TileMapServiceImageryProvider({    url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),}),
-        baseLayerPicker: false, geocoder: false, homeButton: false, infoBox: false,
-        navigationHelpButton: false, sceneModePicker: false
+        baseLayerPicker: false, geocoder: false, homeButton: true, infoBox: false,
+        navigationHelpButton: false, sceneModePicker: true
         });
         viewer.scene.globe.enableLighting = true;
 
@@ -63,8 +63,10 @@
             position: positionsOverTime,
             point: { pixelSize: 5, color: Cesium.Color.RED }
         });
+        
+        
+        viewer.trackedEntity = satellitePoint;
 
-        // viewer.trackedEntity = satellitePoint;
         </script>
     
 </body>
